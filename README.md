@@ -23,6 +23,17 @@ Supported formats: Kwikset KW1, Schlage SC4, Arrow AR4, Master Lock M1, American
 National NA25, National NA12, Corbin CO88, Lockwood LW4, Lockwood LW5, Russwin RU45, Weiser WR3, Best (A2) SFIC,
 Ford H75, Chevrolet B102, Dodge Y159, Kawasaki KA14, Suzuki SUZ18, Yamaha YM63, RV (FIC, GL, Bauer).
 
+## Screenshots
+
+Screenshots taken on the device (Kwikset KW1, bitting 7-4-5-2-1). Left: upright. Right: landscape, the way it looks when the
+device is turned on its side.
+
+<p>
+  <img src="docs/img/screen-portrait.png" alt="Key Copier, upright, Kwikset KW1" width="300">
+  &nbsp;&nbsp;
+  <img src="docs/img/screen-landscape.png" alt="Key Copier, landscape, Kwikset KW1" width="400">
+</p>
+
 ## Controls
 
 | Control | Upright | Device turned on its side |
