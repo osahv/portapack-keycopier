@@ -34,6 +34,13 @@ device is turned on its side.
   <img src="docs/img/screen-landscape.png" alt="Key Copier, landscape, Kwikset KW1" width="400">
 </p>
 
+A printed KW1 key laid on the screen with the depths adjusted to match it (landscape mode; the on-screen hint text in this
+photo is from an earlier build):
+
+<p>
+  <img src="docs/img/photo-key-landscape.jpg" alt="A printed Kwikset KW1 key on the PortaPack screen, outline matched to the cuts" width="560">
+</p>
+
 ## Controls
 
 | Control | Upright | Device turned on its side |
