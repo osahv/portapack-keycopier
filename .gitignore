@@ -1,0 +1,9 @@
+# scratch clones, build output and local data - never published
+KeyCopier/
+mayhem-firmware/
+build/
+dist/
+sd-backup-*/
+drafts/
+*.log
+.DS_Store

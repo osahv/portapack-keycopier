@@ -1,0 +1,13 @@
+Key Copier for PortaPack Mayhem
+
+This app is a port of "KeyCopier" for Flipper Zero by zinongli (https://github.com/zinongli/KeyCopier),
+Copyright (c) 2024 zinongli, MIT License - full text in app/key_copier/LICENSE-KeyCopier-MIT.
+
+Taken from KeyCopier: the key format table (app/key_copier/key_formats.cpp is generated from its key_formats.c by
+tools/gen_formats.py) and the contour drawing algorithm (ui_key_copier.cpp).
+New in this port: the user interface and input handling for the PortaPack screen, calibration for the H2 display and
+the build tooling.
+
+The combined work is distributed under GPL-2.0-or-later, the licence of Mayhem firmware; the MIT licence is compatible.
+Key format dimensions come from publicly available manufacturer key specifications referenced by KeyCopier.
+Brand names (Kwikset, Schlage, ...) are used only to identify key types.
