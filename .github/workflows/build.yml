@@ -1,0 +1,65 @@
+name: Build Mayhem + Key Copier
+
+# Builds the whole firmware + all apps with Key Copier for a Mayhem release and publishes the package as a release.
+# Runs by hand (any tag or branch) and once a day: when Mayhem has a new stable release that has no package yet.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Mayhem tag or branch (empty = latest stable release)"
+        required: false
+        default: ""
+  schedule:
+    - cron: "23 5 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pick the Mayhem ref
+        id: pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_REF: ${{ github.event.inputs.ref }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          REF="$INPUT_REF"
+          [ -n "$REF" ] || REF="$(gh api repos/portapack-mayhem/mayhem-firmware/releases/latest --jq .tag_name)"
+          SAFE="${REF//\//_}"
+          TAG="key-copier_mayhem-$SAFE"
+          SKIP=false
+          if [ "$EVENT" = schedule ] && gh release view "$TAG" >/dev/null 2>&1; then SKIP=true; fi
+          { echo "ref=$REF"; echo "safe=$SAFE"; echo "tag=$TAG"; echo "skip=$SKIP"; } >> "$GITHUB_OUTPUT"
+          echo "Mayhem ref: $REF  (release $TAG, skip=$SKIP)"
+
+      - name: Build
+        if: steps.pick.outputs.skip != 'true'
+        env:
+          REF: ${{ steps.pick.outputs.ref }}
+        run: scripts/build.sh "$REF"
+
+      - name: Publish release
+        if: steps.pick.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF: ${{ steps.pick.outputs.ref }}
+          SAFE: ${{ steps.pick.outputs.safe }}
+          TAG: ${{ steps.pick.outputs.tag }}
+        run: |
+          FILES="dist/key-copier_mayhem-$SAFE.zip dist/SHA256SUMS-$SAFE"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" $FILES --clobber
+          else
+            PRE=""; case "$REF" in v[0-9]*) ;; *) PRE="--prerelease";; esac
+            gh release create "$TAG" $FILES $PRE --title "Mayhem $REF + Key Copier" --notes "Unofficial build of Mayhem $REF with the Key Copier app, made by this repository's workflow. Unpack the zip into the root of the SD card (back it up first), then flash FIRMWARE/*.bin with Utilities > Flash Utility. Apps must come from the same archive. See INSTALL.txt inside and the README."
+          fi

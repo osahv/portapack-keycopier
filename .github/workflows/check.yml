@@ -1,0 +1,28 @@
+name: Check integration
+
+# Fast check (no firmware build): does Key Copier still register cleanly in the latest Mayhem release and in `next`?
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        which: [latest, next]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Clone Mayhem and register the app
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WHICH: ${{ matrix.which }}
+        run: |
+          if [ "$WHICH" = latest ]; then REF="$(gh api repos/portapack-mayhem/mayhem-firmware/releases/latest --jq .tag_name)"; else REF=next; fi
+          git clone --depth 1 --branch "$REF" https://github.com/portapack-mayhem/mayhem-firmware.git mayhem
+          cp -R app/key_copier mayhem/firmware/application/external/key_copier
+          python3 scripts/integrate.py mayhem
+          if [ -f mayhem/tools/update_external_tier_ld.py ]; then (cd mayhem && python3 tools/update_external_tier_ld.py --check); fi
+          echo "registered in $REF"

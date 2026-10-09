@@ -67,13 +67,22 @@ A single `.ppma` file **cannot** be dropped onto a stock Mayhem installation: Ma
 at fixed addresses, so an app only works with the exact firmware image it was linked against. Adding a new app changes
 that image. Details and the experiments behind this are in [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md).
 
+### Ready-made packages (recommended)
+
+A [GitHub Actions workflow](.github/workflows/build.yml) builds Mayhem together with Key Copier for each Mayhem release and
+publishes the result under [Releases](../../releases) (`key-copier_mayhem-<version>.zip`: `FIRMWARE/`, `APPS/`, `INSTALL.txt`).
+It checks once a day for a new stable Mayhem release and can be started by hand for any tag or branch. To update after a new
+Mayhem release: take the new zip, unpack it into the root of the SD card (your `SETTINGS` are not touched) and flash the `.bin`
+from `FIRMWARE/` with Flash Utility. If the build fails (the app no longer fits the new release) the workflow run says so.
+
+### Build it yourself
+
 Until the app is merged into Mayhem, you build a matching firmware **and all apps together**:
 
 1. Back up your SD card (`FIRMWARE`, `APPS`, `SETTINGS`).
-2. `scripts/build.sh v2.4.0 -kc1` (needs Docker; builds Mayhem v2.4.0 with Key Copier and a version suffix).
-3. Copy `dist/full-v2.4.0-kc1/portapack-mayhem_v2.4.0-kc1.bin` to `FIRMWARE/` on the SD card and the whole
-   `dist/full-v2.4.0-kc1/APPS/` over `APPS/`.
-4. On the device: **Utilities → Flash Utility**, choose the `…-kc1.bin` file.
+2. `scripts/build.sh v2.4.0` (needs Docker; builds Mayhem v2.4.0 with Key Copier and a version suffix; no argument = latest stable).
+3. Unpack `dist/key-copier_mayhem-v2.4.0.zip` into the root of the SD card.
+4. On the device: **Utilities → Flash Utility**, choose `portapack-mayhem_<version>-kc1.bin`.
 5. Open **Utilities → Key Copier**.
 
 The version suffix makes the firmware ignore stock `.ppma` files, which would crash it. To go back, flash the official
@@ -84,11 +93,11 @@ Flashing custom firmware is at your own risk. The usual recovery (DFU mode) appl
 ## Build
 
 ```bash
-scripts/build.sh [mayhem-tag] [version-suffix]    # default: v2.4.0 -kc1
+scripts/build.sh [mayhem-tag-or-branch] [version-suffix]    # default: latest stable release, suffix -kc1
 ```
 
 The script clones Mayhem at the tag, copies `app/key_copier/` into `firmware/application/external/`, registers it
-(`scripts/integrate.py`) and runs the official Docker build image. `tools/gen_formats.py` regenerates
+(`scripts/integrate.py`, which handles both the classic `external.ld` and the newer tier system) and runs the official Docker build image. `tools/gen_formats.py` regenerates
 `app/key_copier/key_formats.cpp` from KeyCopier's `key_formats.c`.
 
 ## Calibration

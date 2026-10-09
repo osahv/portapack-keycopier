@@ -1,8 +1,28 @@
 /*
- * Key Copier for PortaPack Mayhem - measure the bitting of a key you own.
- * Based on KeyCopier for Flipper Zero, Copyright (c) 2024 zinongli, MIT License (see LICENSE-KeyCopier-MIT).
- * Distributed under GPL-2.0-or-later, like Mayhem.
+ * Copyright (C) 2026 osahv
+ *
+ * This file is part of PortaPack.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street,
+ * Boston, MA 02110-1301, USA.
+ *
+ * Key Copier is a port of KeyCopier for Flipper Zero (https://github.com/zinongli/KeyCopier),
+ * Copyright (c) 2024 zinongli, MIT License (see LICENSE-KeyCopier-MIT in this folder).
+ * The key format table and the contour algorithm come from there.
  */
+
 #pragma once
 
 #include "ui.hpp"
@@ -39,7 +59,7 @@ class KeyCopierView : public View {
     NavigationView& nav_;
     int format_index_{0};
     int pin_{0};
-    int rot_{0};  // 0..3 = 0/90/180/270 degrees
+    int rot_{0};             // 0..3 = 0/90/180/270 degrees
     int cx_{120}, cy_{170};  // rotation centre
     int depth_[kMaxPins]{};
     Color ink_{Color::black()};

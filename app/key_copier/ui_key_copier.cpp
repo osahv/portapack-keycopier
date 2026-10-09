@@ -1,9 +1,28 @@
 /*
- * Key Copier for PortaPack Mayhem - measure the bitting of a key you own.
- * Contour algorithm and key format data ported from KeyCopier for Flipper Zero
- * (https://github.com/zinongli/KeyCopier), Copyright (c) 2024 zinongli, MIT License - see LICENSE-KeyCopier-MIT.
- * Distributed as a whole under GPL-2.0-or-later, like Mayhem.
+ * Copyright (C) 2026 osahv
+ *
+ * This file is part of PortaPack.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street,
+ * Boston, MA 02110-1301, USA.
+ *
+ * Key Copier is a port of KeyCopier for Flipper Zero (https://github.com/zinongli/KeyCopier),
+ * Copyright (c) 2024 zinongli, MIT License (see LICENSE-KeyCopier-MIT in this folder).
+ * The key format table and the contour algorithm come from there.
  */
+
 #include "ui_key_copier.hpp"
 
 #include "ui_font_fixed_8x16.hpp"
@@ -24,13 +43,15 @@ constexpr Color kBg = Color::white();
 constexpr Color kPin = Color::red();
 
 inline void text(Painter& p, Point at, Color fg, std::string_view s) {
-    // Only the Style overload of draw_string exists in the stock firmware image; using any other firmware function
-    // would force the linker to keep extra code in the main image and shift every address (breaking the .ppma).
     p.draw_string(at, Style{.font = ui::font::fixed_8x16, .background = kBg, .foreground = fg}, s);
 }
 
-inline int mn(int a, int b) { return a < b ? a : b; }
-inline int mx(int a, int b) { return a > b ? a : b; }
+inline int mn(int a, int b) {
+    return a < b ? a : b;
+}
+inline int mx(int a, int b) {
+    return a > b ? a : b;
+}
 }  // namespace
 
 int KeyCopierView::px(float inches) const {
@@ -47,10 +68,14 @@ Point KeyCopierView::rot_point(int x, int y) const {
     // Portrait (0/180): local = screen coordinates, 180 flips around the blade centre.
     // Landscape (90/270): local = coordinates of the turned device (320 wide, 240 high), mapped to the real screen.
     switch (rot_ & 3) {
-        case 1: return {screen_width - 1 - y, x};   // device turned counter-clockwise
-        case 3: return {y, screen_height - 1 - x};  // device turned clockwise
-        case 2: return {2 * cx_ - x, 2 * cy_ - y};
-        default: return {x, y};
+        case 1:
+            return {screen_width - 1 - y, x};  // device turned counter-clockwise
+        case 3:
+            return {y, screen_height - 1 - x};  // device turned clockwise
+        case 2:
+            return {2 * cx_ - x, 2 * cy_ - y};
+        default:
+            return {x, y};
     }
 }
 
@@ -88,12 +113,20 @@ void KeyCopierView::line(Painter& p, int ax, int ay, int bx, int by) {
     const Point a = rot_point(ax, ay), b = rot_point(bx, by);
     int x0 = a.x(), y0 = a.y(), x1 = b.x(), y1 = b.y();
     if (y0 == y1) {
-        if (x0 > x1) { int t = x0; x0 = x1; x1 = t; }
+        if (x0 > x1) {
+            int t = x0;
+            x0 = x1;
+            x1 = t;
+        }
         p.fill_rectangle({x0, y0, x1 - x0 + 1, 1}, ink_);
         return;
     }
     if (x0 == x1) {
-        if (y0 > y1) { int t = y0; y0 = y1; y1 = t; }
+        if (y0 > y1) {
+            int t = y0;
+            y0 = y1;
+            y1 = t;
+        }
         p.fill_rectangle({x0, y0, 1, y1 - y0 + 1}, ink_);
         return;
     }
@@ -104,8 +137,14 @@ void KeyCopierView::line(Painter& p, int ax, int ay, int bx, int by) {
         p.fill_rectangle({x0, y0, 1, 1}, ink_);
         if (x0 == x1 && y0 == y1) break;
         int e2 = 2 * err;
-        if (e2 >= dy) { err += dy; x0 += sx; }
-        if (e2 <= dx) { err += dx; y0 += sy; }
+        if (e2 >= dy) {
+            err += dy;
+            x0 += sx;
+        }
+        if (e2 <= dx) {
+            err += dx;
+            y0 += sy;
+        }
     }
 }
 
@@ -129,23 +168,40 @@ void KeyCopierView::focus() {
 
 bool KeyCopierView::on_key(const KeyEvent key) {
     const auto& f = all_formats[format_index_];
-    enum Act { None, PinPrev, PinNext, FmtPrev, FmtNext, Rotate } act = None;
+    enum Act { None,
+               PinPrev,
+               PinNext,
+               FmtPrev,
+               FmtNext,
+               Rotate } act = None;
     // The user turns the device, so the physical buttons are mapped to what the user sees:
     //   0:   normal              180: contour flipped, device not turned (left/right swap along the key)
     //   90:  device turned counter-clockwise (screen top is on the user's left)
     //   270: device turned clockwise (screen top is on the user's right)
     switch (rot_ & 3) {
         case 0:
-            act = key == KeyEvent::Left ? PinPrev : key == KeyEvent::Right ? PinNext : key == KeyEvent::Up ? FmtPrev : key == KeyEvent::Down ? FmtNext : None;
+            act = key == KeyEvent::Left ? PinPrev : key == KeyEvent::Right ? PinNext
+                                                : key == KeyEvent::Up      ? FmtPrev
+                                                : key == KeyEvent::Down    ? FmtNext
+                                                                           : None;
             break;
         case 2:
-            act = key == KeyEvent::Left ? PinNext : key == KeyEvent::Right ? PinPrev : key == KeyEvent::Up ? FmtPrev : key == KeyEvent::Down ? FmtNext : None;
+            act = key == KeyEvent::Left ? PinNext : key == KeyEvent::Right ? PinPrev
+                                                : key == KeyEvent::Up      ? FmtPrev
+                                                : key == KeyEvent::Down    ? FmtNext
+                                                                           : None;
             break;
         case 1:
-            act = key == KeyEvent::Up ? PinPrev : key == KeyEvent::Down ? PinNext : key == KeyEvent::Right ? FmtPrev : key == KeyEvent::Left ? FmtNext : None;
+            act = key == KeyEvent::Up ? PinPrev : key == KeyEvent::Down ? PinNext
+                                              : key == KeyEvent::Right  ? FmtPrev
+                                              : key == KeyEvent::Left   ? FmtNext
+                                                                        : None;
             break;
         default:
-            act = key == KeyEvent::Up ? PinNext : key == KeyEvent::Down ? PinPrev : key == KeyEvent::Right ? FmtNext : key == KeyEvent::Left ? FmtPrev : None;
+            act = key == KeyEvent::Up ? PinNext : key == KeyEvent::Down ? PinPrev
+                                              : key == KeyEvent::Right  ? FmtNext
+                                              : key == KeyEvent::Left   ? FmtPrev
+                                                                        : None;
             break;
     }
     if (key == KeyEvent::Select) act = Rotate;
@@ -319,7 +375,9 @@ void KeyCopierView::paint(Painter& p) {
     text_at(p, hx, y_bit, Color::black(), bitting);
     text_at(p, hx, y_h1, Color::dark_grey(), "L/R pin    Wheel depth");
     text_at(p, hx, y_h2, Color::dark_grey(), "U/D type   Sel rotate");
-    const char* exit_hint = (rot_ == 0) ? "Exit: Left on pin 1, Sel" : (rot_ == 2) ? "Exit: Left on last pin, Sel" : (rot_ == 1) ? "Exit: Left on pin 1, Sel" : "Exit: Right on last pin,Sel";
+    const char* exit_hint = (rot_ == 0) ? "Exit: Left on pin 1, Sel" : (rot_ == 2) ? "Exit: Left on last pin, Sel"
+                                                                   : (rot_ == 1)   ? "Exit: Left on pin 1, Sel"
+                                                                                   : "Exit: Right on last pin,Sel";
     text_at(p, hx, y_h3, Color::dark_grey(), exit_hint);
 }
 
