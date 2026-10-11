@@ -102,8 +102,9 @@ The script clones Mayhem at the tag, copies `app/key_copier/` into `firmware/app
 
 ## Calibration
 
-The outline is drawn in real millimetres. The scale constant `kInchPerPx` in `app/key_copier/ui_key_copier.cpp` is set for
-the H2 screen (visible area about 50 × 65 mm, 240 × 320 px, about 0.205 mm per pixel). Screens differ between PortaPack
+The outline is drawn in real millimetres. The scale constant `kUnitsPerPx` in `app/key_copier/ui_key_copier.cpp` (in
+1/10000 inch per pixel, currently 81 = 0.0081") is set for the H2 screen (visible area about 50 × 65 mm, 240 × 320 px,
+about 0.205 mm per pixel). Screens differ between PortaPack
 revisions; if the outline is not life-size on yours, measure the visible area and adjust the constant.
 
 ## Responsible use

@@ -31,21 +31,21 @@ namespace ui::external_app::key_copier {
 struct KeyFormat {
     const char* manufacturer;
     const char* name;
-    int sides;  // 2 = double-sided key
-    int stop;   // 2 = draw the stop line at the end of the blade
-    float first_pin_inch;
-    float pin_increment_inch;
+    int sides;          // 2 = double-sided key
+    int stop;           // 2 = draw the stop line at the end of the blade
+    int first_pin;      // 1/10000 inch
+    int pin_increment;  // 1/10000 inch
     int pin_num;
-    float pin_width_inch;
-    float tangent;  // tan((180 - drill_angle) / 2), precomputed
-    float elbow_inch;
-    float uncut_depth_inch;
-    float depth_step_inch;
+    int pin_width;    // 1/10000 inch
+    int tangent;      // tan((180 - drill_angle) / 2) in 1/1000, precomputed
+    int elbow;        // 1/10000 inch
+    int uncut_depth;  // 1/10000 inch
+    int depth_step;   // 1/10000 inch
     int min_depth;
     int max_depth;
     int macs;
     int clearance;
-    float last_pin_inch;
+    int last_pin;  // 1/10000 inch
 };
 
 extern const KeyFormat all_formats[FORMAT_NUM];

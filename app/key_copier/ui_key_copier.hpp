@@ -54,7 +54,7 @@ class KeyCopierView : public View {
     // the device is turned on its side.
     void text_at(Painter& painter, int x, int y, Color fg, std::string_view s);
     int rel_depth(int pin) const;  // 0 outside the pin range
-    int px(float inches) const;
+    int px(int units) const;       // 1/10000 inch to pixels
 
     NavigationView& nav_;
     int format_index_{0};

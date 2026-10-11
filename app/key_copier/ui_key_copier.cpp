@@ -35,7 +35,7 @@ namespace ui::external_app::key_copier {
 
 namespace {
 // Calibration for the H2 screen: visible area 50 x 65 mm over 240 x 320 px = ~0.205 mm per pixel.
-constexpr float kInchPerPx = 0.0081f;
+constexpr int kUnitsPerPx = 81;  // 0.0081 inch per pixel, in 1/10000 inch
 constexpr int kBaseY = 180;
 constexpr int kBaseYLand = 128;  // landscape: blade bottom, text above and below
 constexpr int kTipMargin = 22;   // landscape: space right of the drawn tip (~4.5 mm)
@@ -54,8 +54,13 @@ inline int mx(int a, int b) {
 }
 }  // namespace
 
-int KeyCopierView::px(float inches) const {
-    return (int)(inches / kInchPerPx + 0.5f);
+int KeyCopierView::px(int units) const {
+    return (units + kUnitsPerPx / 2) / kUnitsPerPx;  // units are never negative
+}
+
+// v * tangent, rounded like the original (int)(v * tan + 0.5f)
+static int tan_mul(int v, int tangent) {
+    return (v * tangent + 500) / 1000;
 }
 
 int KeyCopierView::rel_depth(int pin) const {
@@ -245,15 +250,15 @@ void KeyCopierView::paint(Painter& p) {
     const auto& f = all_formats[format_index_];
     p.fill_rectangle(screen_rect(), kBg);
 
-    const int pin_half = px(f.pin_width_inch) / 2;
-    const int pin_step = px(f.pin_increment_inch);
-    const int uncut = px(f.uncut_depth_inch);
-    const int step = px(f.depth_step_inch);
-    const int level_len = px(f.last_pin_inch + f.elbow_inch);
+    const int pin_half = px(f.pin_width) / 2;
+    const int pin_step = px(f.pin_increment);
+    const int uncut = px(f.uncut_depth);
+    const int step = px(f.depth_step);
+    const int level_len = px(f.last_pin + f.elbow);
     const bool land = (rot_ & 1) != 0;
     // Landscape: the right end is the key tip, so keep only a small margin there and leave the rest for the bow.
     const bool two_sided = f.sides == 2;
-    const int right_ext = level_len + (two_sided ? 0 : px(f.elbow_inch));  // real right end of the drawn contour
+    const int right_ext = level_len + (two_sided ? 0 : px(f.elbow));  // real right end of the drawn contour
     const int x0 = land ? (screen_height - kTipMargin - right_ext) : (screen_width - right_ext) / 2;
     const int base_y = land ? kBaseYLand : kBaseY;
     const int top = base_y - uncut;
@@ -265,13 +270,13 @@ void KeyCopierView::paint(Painter& p) {
 
     int pre_extra = 0, post_extra = 0, b_pre_extra = 0, b_post_extra = 0;
     for (int i = 0; i < f.pin_num; i++) {
-        const int cx = x0 + px(f.first_pin_inch + i * f.pin_increment_inch);
+        const int cx = x0 + px(f.first_pin + i * f.pin_increment);
         const int cur = rel_depth(i);
         const int last = (i == 0) ? 0 : rel_depth(i - 1);
         const int next = (i == f.pin_num - 1) ? 0 : rel_depth(i + 1);
-        // depth in px, measured with the same rounding as the original: round(depth * step_inch / ipp)
-        const int cur_px = (int)(cur * f.depth_step_inch / kInchPerPx + 0.5f);
-        const int last_px = (int)(last * f.depth_step_inch / kInchPerPx + 0.5f);
+        // depth in px, with the same rounding as the original: round(depth * step / inch_per_px)
+        const int cur_px = px(cur * f.depth_step);
+        const int last_px = px(last * f.depth_step);
         (void)step;
 
         // pin marker and value
@@ -286,20 +291,20 @@ void KeyCopierView::paint(Painter& p) {
             }
             if ((last + cur) > f.clearance) {
                 if (i != 0) b_pre_extra = mn(mx(pin_step - b_post_extra, pin_half), pin_step - pin_half);
-                line(p, cx - b_pre_extra, bottom - mx((int)((cur_px - (b_pre_extra - pin_half)) * f.tangent + 0.5f), 0),
-                     cx - pin_half, bottom - (int)(cur_px * f.tangent + 0.5f));
+                line(p, cx - b_pre_extra, bottom - mx(tan_mul(cur_px - (b_pre_extra - pin_half), f.tangent), 0),
+                     cx - pin_half, bottom - tan_mul(cur_px, f.tangent));
             } else {
                 int up_start = cx - pin_half - cur_px;
-                line(p, up_start, bottom, cx - pin_half, bottom - (int)(cur_px * f.tangent + 0.5f));
+                line(p, up_start, bottom, cx - pin_half, bottom - tan_mul(cur_px, f.tangent));
                 line(p, mn(cx - pin_step + pin_half + last_px, up_start), bottom, up_start, bottom);
             }
             if ((cur + next) > f.clearance) {
-                int prod = (int)((float)cur / (float)(cur + next) * pin_step);
+                int prod = cur * pin_step / (cur + next);
                 b_post_extra = mn(mx(prod, pin_half), pin_step - pin_half);
                 line(p, cx + pin_half, bottom - cur_px, cx + b_post_extra,
-                     bottom - mx(cur_px - (int)((b_post_extra - pin_half) * f.tangent + 0.5f), 0));
+                     bottom - mx(cur_px - tan_mul(b_post_extra - pin_half, f.tangent), 0));
             } else {
-                line(p, cx + pin_half, bottom - (int)(cur_px * f.tangent + 0.5f), cx + pin_half + cur_px, bottom);
+                line(p, cx + pin_half, bottom - tan_mul(cur_px, f.tangent), cx + pin_half + cur_px, bottom);
             }
         }
 
@@ -313,32 +318,32 @@ void KeyCopierView::paint(Painter& p) {
         }
         if ((last + cur) > f.clearance) {
             if (i != 0) pre_extra = mn(mx(pin_step - post_extra, pin_half), pin_step - pin_half);
-            line(p, cx - pre_extra, top + mx((int)((cur_px - (pre_extra - pin_half)) * f.tangent + 0.5f), 0),
-                 cx - pin_half, top + (int)(cur_px * f.tangent + 0.5f));
+            line(p, cx - pre_extra, top + mx(tan_mul(cur_px - (pre_extra - pin_half), f.tangent), 0),
+                 cx - pin_half, top + tan_mul(cur_px, f.tangent));
         } else {
             int down_start = cx - pin_half - cur_px;
-            line(p, down_start, top, cx - pin_half, top + (int)(cur_px * f.tangent + 0.5f));
+            line(p, down_start, top, cx - pin_half, top + tan_mul(cur_px, f.tangent));
             line(p, mn(cx - pin_step + pin_half + last_px, down_start), top, down_start, top);
         }
         if ((cur + next) > f.clearance) {
-            int prod = (int)((float)cur / (float)(cur + next) * pin_step);
+            int prod = cur * pin_step / (cur + next);
             post_extra = mn(mx(prod, pin_half), pin_step - pin_half);
             line(p, cx + pin_half, top + cur_px, cx + post_extra,
-                 top + mx(cur_px - (int)((post_extra - pin_half) * f.tangent + 0.5f), 0));
+                 top + mx(cur_px - tan_mul(post_extra - pin_half, f.tangent), 0));
         } else {
-            line(p, cx + pin_half, top + (int)(cur_px * f.tangent + 0.5f), cx + pin_half + cur_px, top);
+            line(p, cx + pin_half, top + tan_mul(cur_px, f.tangent), cx + pin_half + cur_px, top);
         }
     }
 
     // elbow at the tip and the shoulder end
-    const int elbow = px(f.elbow_inch);
+    const int elbow = px(f.elbow);
     if (!two) line(p, x0 + level_len, base_y, x0 + level_len + elbow, base_y - elbow);
     line(p, x0, top - 6, x0, top);
     if (f.stop == 2) line(p, x0 + level_len, top, x0 + level_len, base_y);
 
     // pin values above the blade (kept upright); the selected pin is highlighted
     for (int i = 0; i < f.pin_num; i++) {
-        const int cx = x0 + px(f.first_pin_inch + i * f.pin_increment_inch);
+        const int cx = x0 + px(f.first_pin + i * f.pin_increment);
         const bool sel = (i == pin_);
         const Color fg = sel ? kPin : Color::black();
         const int cw = ui::font::fixed_8x16.char_width();
